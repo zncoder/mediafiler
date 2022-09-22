@@ -1,0 +1,21 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+  <meta charset=utf-8>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" type="text/css" href="/asset/index.css">
+  <title>media files</title>
+</head>
+<body>
+  <ol start="0">
+    {{with $d := .}}
+    {{range $i, $f := $d.Files}}<li>
+      <button class="link_btn" onclick="copyLink(event)">copy</button>
+      <a href="/f/{{$i}}">{{$f.Name}}</a>
+    </li>
+    {{end}}
+    {{end}}
+  </ol>
+  <script src="/asset/index.js"></script>
+</body>
+</html>
