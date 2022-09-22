@@ -1,5 +1,13 @@
+body {
+    font-family: sans-serif, pingfang sc, microsoft yahei;
+}
+
+a {
+    text-decoration: none;
+}
+
 ol li {
-    margin: 1.2em;
+    margin: 1.1em;
 }
 
 .link_btn {
