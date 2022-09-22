@@ -31,8 +31,8 @@ type Dirs struct {
 	dirs     []string
 	suffixes []string
 
-	mu sync.Mutex
-	Files
+	mu    sync.Mutex
+	files []string
 }
 
 //go:embed asset
@@ -43,14 +43,23 @@ var indexTmpl = func() *template.Template {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return template.Must(template.New("index").Parse(string(index)))
+	funcMap := template.FuncMap{
+		"title": extractTitle,
+	}
+	return template.Must(template.New("index").Funcs(funcMap).Parse(string(index)))
 }()
+
+func extractTitle(p string) string {
+	name := filepath.Base(p)
+	ext := filepath.Ext(name)
+	return strings.TrimSuffix(name, ext)
+}
 
 func (ds *Dirs) Index(w http.ResponseWriter, r *http.Request) {
 	ds.refresh()
 
 	var bb bytes.Buffer
-	err := indexTmpl.Execute(&bb, &ds.Files)
+	err := indexTmpl.Execute(&bb, &ds.files)
 	if err != nil {
 		log.Fatal("execute", err, bb.String())
 	}
@@ -61,7 +70,7 @@ func (ds *Dirs) refresh() {
 	ds.mu.Lock()
 	defer ds.mu.Unlock()
 
-	var files []FilePath
+	var files []string
 	for _, d := range ds.dirs {
 		fs.WalkDir(os.DirFS(d), ".", func(p string, _ fs.DirEntry, err error) error {
 			if err != nil {
@@ -69,7 +78,7 @@ func (ds *Dirs) refresh() {
 			}
 			for _, sfx := range ds.suffixes {
 				if strings.HasSuffix(p, sfx) {
-					files = append(files, FilePath{Name: p, Path: filepath.Join(d, p)})
+					files = append(files, filepath.Join(d, p))
 					break
 				}
 			}
@@ -78,15 +87,15 @@ func (ds *Dirs) refresh() {
 	}
 
 	sort.Slice(files, func(i, j int) bool {
-		di, fi := filepath.Split(files[i].Path)
-		dj, fj := filepath.Split(files[j].Path)
+		di, fi := filepath.Split(files[i])
+		dj, fj := filepath.Split(files[j])
 		if fi == fj {
 			return di < dj
 		}
 		return fi < fj
 	})
 
-	ds.Files.Files = files
+	ds.files = files
 }
 
 var pathRe = regexp.MustCompile(`^/f/([0-9]+)$`)
@@ -101,7 +110,7 @@ func (ds *Dirs) ServeFile(w http.ResponseWriter, r *http.Request) {
 	fid, _ := strconv.Atoi(ms[1])
 
 	ds.mu.Lock()
-	filename := ds.Files.Files[fid].Path
+	filename := ds.files[fid]
 	ds.mu.Unlock()
 	if filename == "" {
 		http.Error(w, "Not found", http.StatusNotFound)

@@ -8,12 +8,10 @@
 </head>
 <body>
   <ol start="0">
-    {{with $d := .}}
-    {{range $i, $f := $d.Files}}<li>
+    {{range $i, $f := .}}<li>
       <button class="link_btn" onclick="copyLink(event)">copy</button>
-      <a href="/f/{{$i}}">{{$f.Name}}</a>
+      <a href="/f/{{$i}}">{{title $f}}</a>
     </li>
-    {{end}}
     {{end}}
   </ol>
   <script src="/asset/index.js"></script>
