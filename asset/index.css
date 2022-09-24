@@ -18,11 +18,18 @@ ol li {
 
 .link_btn {
     background-color: #4CAF50;
+}
+
+.del_btn {
+    background-color: #F44336;
+}
+
+.link_btn, .del_btn {
     border-radius: 4px;
     border: none;
     color: white;
 }
 
-.link_btn:active {
+.link_btn:active, .del_btn {
     transform: scale(0.8);
 }
