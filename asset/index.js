@@ -1,6 +1,6 @@
 function copyLink(ev) {
   ev.preventDefault()
-  let url = ev.target.parentElement.querySelector('a').href
+  let url = ev.target.parentElement.querySelector('.name_lnk').href
 
   let ta = document.createElement("textarea")
   ta.textContent = url
@@ -18,7 +18,7 @@ function deleteFile(ev) {
   ev.preventDefault()
   let el = ev.target
   let url = el.href
-  let lnk = el.parentElement.querySelector('a')
+  let lnk = el.parentElement.querySelector('.name_lnk')
   if (lnk.deleted) {
     console.log('undelete')
     delete lnk['deleted']

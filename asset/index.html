@@ -10,7 +10,7 @@
   <ol start="0">
     {{range $i, $f := .}}<li>
       <a class="link_btn" href="#" onclick="copyLink(event)">&nbsp;copy&nbsp;</a>
-      <a href="/f/{{$i}}">{{title $f.Path}}</a>
+      <a class="name_lnk" href="/f/{{$i}}">{{title $f.Path}}</a>
       <a class="del_btn" href="/delete/{{$f.ID}}" onclick="deleteFile(event)">&nbsp;x&nbsp;</a>
     </li>
     {{end}}
