@@ -139,6 +139,7 @@ func sha(name string) string {
 
 func (ds *Dirs) refresh() {
 	var files []FileInfo
+	var tss []time.Time
 	for _, d := range ds.dirs {
 		fs.WalkDir(os.DirFS(d), ".", func(p string, _ fs.DirEntry, err error) error {
 			if err != nil {
@@ -147,7 +148,9 @@ func (ds *Dirs) refresh() {
 			for _, sfx := range ds.suffixes {
 				if strings.HasSuffix(p, sfx) {
 					p := filepath.Join(d, p)
+					st, _ := os.Stat(p)
 					files = append(files, FileInfo{Path: p, ID: sha(p)})
+					tss = append(tss, st.ModTime())
 					break
 				}
 			}
@@ -156,12 +159,7 @@ func (ds *Dirs) refresh() {
 	}
 
 	sort.Slice(files, func(i, j int) bool {
-		di, fi := filepath.Split(files[i].Path)
-		dj, fj := filepath.Split(files[j].Path)
-		if fi == fj {
-			return di < dj
-		}
-		return fi < fj
+		return tss[i].Before(tss[j])
 	})
 
 	ds.files = files
