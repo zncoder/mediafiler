@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
+	"io"
 	"io/fs"
 	"log"
 	"net/http"
@@ -15,7 +16,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -31,7 +31,7 @@ type Dirs struct {
 	suffixes []string
 
 	mu    sync.Mutex
-	files []FileInfo
+	files []FileInfo           // sorted
 	toDel map[string]time.Time // path -> time deleted
 }
 
@@ -69,22 +69,24 @@ func (ds *Dirs) Index(w http.ResponseWriter, r *http.Request) {
 	w.Write(bb.Bytes())
 }
 
+func (ds *Dirs) getFileByID(id string) (string, bool) {
+	for _, fi := range ds.files {
+		if fi.ID == id {
+			return fi.Path, true
+		}
+	}
+	return "", false
+}
+
 func (ds *Dirs) DeleteFile(w http.ResponseWriter, r *http.Request) {
 	ds.mu.Lock()
 	defer ds.mu.Unlock()
 
-	id := filepath.Base(r.URL.Path)
+	fid := filepath.Base(r.URL.Path)
 	_, undelete := r.URL.Query()["undelete"]
 
-	var filename string
-	for _, fi := range ds.files {
-		if fi.ID == id {
-			filename = fi.Path
-			break
-		}
-	}
-
-	if filename == "" {
+	filename, ok := ds.getFileByID(fid)
+	if !ok {
 		http.Error(w, "Invalid id to delete", http.StatusBadRequest)
 		return
 	}
@@ -133,8 +135,29 @@ func (ds *Dirs) runDeleter() {
 }
 
 func sha(name string) string {
-	b := sha256.Sum224([]byte(name))
-	return base32.StdEncoding.EncodeToString(b[:])[:16]
+	hh := sha256.New224()
+	io.WriteString(hh, name)
+	return strings.ToLower(base32.StdEncoding.EncodeToString(hh.Sum(nil)))
+}
+
+func minPrefix(files []FileInfo) {
+	n := 1
+L:
+	for ; n < 41; n++ {
+		seen := make(map[string]struct{})
+		for _, fi := range files {
+			x := fi.ID[:n]
+			if _, ok := seen[x]; ok {
+				continue L
+			}
+			seen[x] = struct{}{}
+		}
+		break
+	}
+
+	for i := range files {
+		files[i].ID = files[i].ID[:n] // change in-place
+	}
 }
 
 func (ds *Dirs) refresh() {
@@ -158,6 +181,8 @@ func (ds *Dirs) refresh() {
 		})
 	}
 
+	minPrefix(files)
+
 	sort.Slice(files, func(i, j int) bool {
 		return tss[i].Before(tss[j])
 	})
@@ -165,7 +190,7 @@ func (ds *Dirs) refresh() {
 	ds.files = files
 }
 
-var pathRe = regexp.MustCompile(`^/f/([0-9]+)$`)
+var pathRe = regexp.MustCompile(`^/f/([0-9a-z]+)$`)
 
 func (ds *Dirs) ServeFile(w http.ResponseWriter, r *http.Request) {
 	p := r.URL.Path
@@ -174,12 +199,12 @@ func (ds *Dirs) ServeFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid path", http.StatusBadRequest)
 		return
 	}
-	fid, _ := strconv.Atoi(ms[1])
+	fid := ms[1]
 
 	ds.mu.Lock()
-	filename := ds.files[fid].Path
+	filename, ok := ds.getFileByID(fid)
 	ds.mu.Unlock()
-	if filename == "" {
+	if !ok {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
