@@ -22,8 +22,9 @@ import (
 )
 
 type FileInfo struct {
-	Path string
-	ID   string
+	Path    string
+	ID      string
+	ModTime time.Time
 }
 
 type Dirs struct {
@@ -162,7 +163,6 @@ L:
 
 func (ds *Dirs) refresh() {
 	var files []FileInfo
-	var tss []time.Time
 	for _, d := range ds.dirs {
 		fs.WalkDir(os.DirFS(d), ".", func(p string, _ fs.DirEntry, err error) error {
 			if err != nil {
@@ -172,8 +172,7 @@ func (ds *Dirs) refresh() {
 				if strings.HasSuffix(p, sfx) {
 					p := filepath.Join(d, p)
 					st, _ := os.Stat(p)
-					files = append(files, FileInfo{Path: p, ID: sha(p)})
-					tss = append(tss, st.ModTime())
+					files = append(files, FileInfo{Path: p, ID: sha(p), ModTime: st.ModTime()})
 					break
 				}
 			}
@@ -183,9 +182,7 @@ func (ds *Dirs) refresh() {
 
 	minPrefix(files)
 
-	sort.Slice(files, func(i, j int) bool {
-		return tss[i].Before(tss[j])
-	})
+	sort.Slice(files, func(i, j int) bool { return files[i].ModTime.Before(files[j].ModTime) })
 
 	ds.files = files
 }
