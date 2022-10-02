@@ -30,6 +30,10 @@ ol li {
     color: white;
 }
 
+.del_btn {
+    border-radius: 50%;
+}
+
 .link_btn:active, .del_btn {
     transform: scale(0.8);
 }
