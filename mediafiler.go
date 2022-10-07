@@ -37,6 +37,17 @@ type Dirs struct {
 	toArchive map[string]time.Time // path -> time archived
 }
 
+func New(dirs, suffixes []string) *Dirs {
+	ds := &Dirs{
+		dirs:      dirs,
+		suffixes:  suffixes,
+		toDel:     make(map[string]time.Time),
+		toArchive: make(map[string]time.Time),
+	}
+	ds.discoverGarbage()
+	return ds
+}
+
 //go:embed asset
 var asset embed.FS
 
@@ -94,38 +105,29 @@ func (ds *Dirs) ArchiveFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fid := filepath.Base(r.URL.Path)
-	_, undelete := r.URL.Query()["undelete"]
-
-	filename, ok := ds.getFileByID(fid)
-	if !ok {
-		http.Error(w, "Invalid id to archive", http.StatusBadRequest)
-		return
-	}
-
-	if undelete {
-		delete(ds.toArchive, filename)
-	} else {
-		ds.toArchive[filename] = time.Now()
-	}
+	ds.archiveOrDeleteFile(w, r, "archive")
 }
 
 func (ds *Dirs) DeleteFile(w http.ResponseWriter, r *http.Request) {
 	ds.mu.Lock()
 	defer ds.mu.Unlock()
 
+	ds.archiveOrDeleteFile(w, r, "delete")
+}
+
+func (ds *Dirs) archiveOrDeleteFile(w http.ResponseWriter, r *http.Request, action string) {
 	fid := filepath.Base(r.URL.Path)
-	_, undelete := r.URL.Query()["undelete"]
+	_, undo := r.URL.Query()["undo"]
 
 	filename, ok := ds.getFileByID(fid)
 	if !ok {
-		http.Error(w, "Invalid id to delete", http.StatusBadRequest)
+		http.Error(w, "Invalid id to "+action, http.StatusBadRequest)
 		return
 	}
 
 	from := filename
-	to := filename + ".del"
-	if undelete {
+	to := filename + "." + action
+	if undo {
 		from, to = to, from
 	}
 
@@ -135,10 +137,15 @@ func (ds *Dirs) DeleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if undelete {
-		delete(ds.toDel, from)
+	todo := ds.toDel
+	if action == "archive" {
+		todo = ds.toArchive
+	}
+
+	if undo {
+		delete(todo, from)
 	} else {
-		ds.toDel[to] = time.Now()
+		todo[to] = time.Now()
 	}
 }
 
@@ -171,7 +178,10 @@ func (ds *Dirs) runDeleter() {
 		}
 
 		for _, p := range toarchive {
-			np := filepath.Join(archiveDir, filepath.Base(p))
+			if !strings.HasSuffix(p, ".archive") {
+				log.Fatalf("file:%s not end with .archive", p)
+			}
+			np := filepath.Join(archiveDir, filepath.Base(strings.TrimSuffix(p, ".archive")))
 			err := os.Rename(p, np)
 			if err != nil {
 				log.Printf("rename %s -> %s err:%v", p, np, err)
@@ -203,6 +213,35 @@ L:
 
 	for i := range files {
 		files[i].ID = files[i].ID[:n] // change in-place
+	}
+}
+
+func (ds *Dirs) discoverGarbage() {
+	var todel, toarchive []string
+	for _, d := range ds.dirs {
+		fs.WalkDir(os.DirFS(d), ".", func(p string, _ fs.DirEntry, err error) error {
+			if err != nil {
+				log.Fatal("walkdir", d, err)
+			}
+			switch filepath.Ext(p) {
+			case ".delete":
+				p := filepath.Join(d, p)
+				todel = append(todel, p)
+			case ".archive":
+				p := filepath.Join(d, p)
+				toarchive = append(toarchive, p)
+			}
+			return nil
+		})
+	}
+	log.Printf("to delete old %v", todel)
+	log.Printf("to archive old %v", toarchive)
+	now := time.Now()
+	for _, p := range todel {
+		ds.toDel[p] = now
+	}
+	for _, p := range toarchive {
+		ds.toArchive[p] = now
 	}
 }
 
@@ -270,18 +309,13 @@ func main() {
 		suffixes = append(suffixes, "."+x)
 	}
 
-	dirs := Dirs{
-		dirs:      flag.Args(),
-		suffixes:  suffixes,
-		toDel:     make(map[string]time.Time),
-		toArchive: make(map[string]time.Time),
-	}
-	go dirs.runDeleter()
+	ds := New(flag.Args(), suffixes)
+	go ds.runDeleter()
 
-	http.HandleFunc("/", dirs.Index)
-	http.HandleFunc("/f/", dirs.ServeFile)
-	http.HandleFunc("/delete/", dirs.DeleteFile)
-	http.HandleFunc("/archive/", dirs.ArchiveFile)
+	http.HandleFunc("/", ds.Index)
+	http.HandleFunc("/f/", ds.ServeFile)
+	http.HandleFunc("/delete/", ds.DeleteFile)
+	http.HandleFunc("/archive/", ds.ArchiveFile)
 	http.Handle("/asset/", http.FileServer(http.FS(asset)))
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *portFlag), nil))
 }

@@ -27,7 +27,7 @@ function archiveFile(ev) {
     delete lnk['_my_archived']
     lnk.classList.remove('link_archived')
 
-    fetch(url + "?unarchive")
+    fetch(url + "?undo")
   } else {
     console.log('archive')
     lnk._my_archived = 'yes'
@@ -50,7 +50,7 @@ function deleteFile(ev) {
     delete lnk['_my_deleted']
     lnk.classList.remove('link_deleted')
 
-    fetch(url + "?undelete")
+    fetch(url + "?undo")
   } else {
     console.log('delete')
     lnk._my_deleted = 'yes'
