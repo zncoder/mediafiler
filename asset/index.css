@@ -13,27 +13,38 @@ ol {
 }
 
 ol li {
-    margin: 1.1em;
+    margin: 0.5em;
+}
+
+.link_btn, .del_btn, .archive_btn {
+    border: none;
+    color: black;
+    padding: 4px 4px 2px 4px;
+    border-radius: 50%;
+    margin: 0 0.5em 0 0.5em;
 }
 
 .link_btn {
     background-color: #4CAF50;
 }
 
+.archive_btn {
+    background-color: Beige;
+}
+
 .del_btn {
     background-color: #F44336;
 }
 
-.link_btn, .del_btn {
-    border-radius: 4px;
-    border: none;
-    color: white;
-}
-
-.del_btn {
-    border-radius: 50%;
-}
-
-.link_btn:active, .del_btn {
+.link_btn:active, .del_btn:active, .archive_btn:active {
     transform: scale(0.8);
+}
+
+.link_deleted {
+    text-decoration: line-through;
+    background-color: DimGray;
+}
+
+.link_archived {
+    background-color: Beige;
 }

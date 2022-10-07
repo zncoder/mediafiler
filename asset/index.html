@@ -8,11 +8,16 @@
 </head>
 <body>
   <ol start="0">
-    {{range $f := .}}<li>
-      <a class="link_btn" href="#" onclick="copyLink(event)">&nbsp;copy&nbsp;</a>
+    {{with $d := .}}
+    {{range $f := $d.Files}}<li>
+      <a class="link_btn" href="#" onclick="copyLink(event)">ⓒ</a>
+      {{if $d.EnableArchive}}
+      <a class="archive_btn" href="/archive/{{$f.ID}}" onclick="archiveFile(event)">ⓐ</a>
+      {{end}}
       <a class="name_lnk" href="/f/{{$f.ID}}">{{title $f.Path}}</a>
-      <a class="del_btn" href="/delete/{{$f.ID}}" onclick="deleteFile(event)">&nbsp;x&nbsp;</a>
+      <a class="del_btn" href="/delete/{{$f.ID}}" onclick="deleteFile(event)">ⓧ</a>
     </li>
+    {{end}}
     {{end}}
   </ol>
   <script src="/asset/index.js"></script>

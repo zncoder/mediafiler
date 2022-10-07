@@ -31,9 +31,10 @@ type Dirs struct {
 	dirs     []string
 	suffixes []string
 
-	mu    sync.Mutex
-	files []FileInfo           // sorted
-	toDel map[string]time.Time // path -> time deleted
+	mu        sync.Mutex
+	files     []FileInfo           // sorted
+	toDel     map[string]time.Time // path -> time deleted
+	toArchive map[string]time.Time // path -> time archived
 }
 
 //go:embed asset
@@ -62,8 +63,13 @@ func (ds *Dirs) Index(w http.ResponseWriter, r *http.Request) {
 
 	ds.refresh()
 
+	data := struct {
+		EnableArchive bool
+		Files         []FileInfo
+	}{archiveDir != "", ds.files}
+
 	var bb bytes.Buffer
-	err := indexTmpl.Execute(&bb, &ds.files)
+	err := indexTmpl.Execute(&bb, data)
 	if err != nil {
 		log.Fatal("execute", err, bb.String())
 	}
@@ -77,6 +83,31 @@ func (ds *Dirs) getFileByID(id string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func (ds *Dirs) ArchiveFile(w http.ResponseWriter, r *http.Request) {
+	ds.mu.Lock()
+	defer ds.mu.Unlock()
+
+	if archiveDir == "" {
+		http.Error(w, "Archive not supported", http.StatusBadRequest)
+		return
+	}
+
+	fid := filepath.Base(r.URL.Path)
+	_, undelete := r.URL.Query()["undelete"]
+
+	filename, ok := ds.getFileByID(fid)
+	if !ok {
+		http.Error(w, "Invalid id to archive", http.StatusBadRequest)
+		return
+	}
+
+	if undelete {
+		delete(ds.toArchive, filename)
+	} else {
+		ds.toArchive[filename] = time.Now()
+	}
 }
 
 func (ds *Dirs) DeleteFile(w http.ResponseWriter, r *http.Request) {
@@ -116,12 +147,18 @@ func (ds *Dirs) runDeleter() {
 	for now := range time.Tick(threshold) {
 		stayTs := now.Add(-threshold)
 
-		var todel []string
+		var todel, toarchive []string
 		ds.mu.Lock()
 		for p, ts := range ds.toDel {
 			if ts.Before(stayTs) {
 				delete(ds.toDel, p)
 				todel = append(todel, p)
+			}
+		}
+		for p, ts := range ds.toArchive {
+			if ts.Before(stayTs) {
+				delete(ds.toArchive, p)
+				toarchive = append(toarchive, p)
 			}
 		}
 		ds.mu.Unlock()
@@ -130,6 +167,14 @@ func (ds *Dirs) runDeleter() {
 			err := os.Remove(p)
 			if err != nil {
 				log.Printf("delete %s err:%v", p, err)
+			}
+		}
+
+		for _, p := range toarchive {
+			np := filepath.Join(archiveDir, filepath.Base(p))
+			err := os.Rename(p, np)
+			if err != nil {
+				log.Printf("rename %s -> %s err:%v", p, np, err)
 			}
 		}
 	}
@@ -209,8 +254,11 @@ func (ds *Dirs) ServeFile(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, filename)
 }
 
+var archiveDir string
+
 func main() {
 	suffixFlag := flag.String("f", "mp4,mkv", "suffixes supported")
+	flag.StringVar(&archiveDir, "a", "", "archive dir")
 	portFlag := flag.Int("p", 5555, "port")
 	flag.Parse()
 	if flag.NArg() == 0 {
@@ -223,15 +271,17 @@ func main() {
 	}
 
 	dirs := Dirs{
-		dirs:     flag.Args(),
-		suffixes: suffixes,
-		toDel:    make(map[string]time.Time),
+		dirs:      flag.Args(),
+		suffixes:  suffixes,
+		toDel:     make(map[string]time.Time),
+		toArchive: make(map[string]time.Time),
 	}
 	go dirs.runDeleter()
 
 	http.HandleFunc("/", dirs.Index)
 	http.HandleFunc("/f/", dirs.ServeFile)
 	http.HandleFunc("/delete/", dirs.DeleteFile)
+	http.HandleFunc("/archive/", dirs.ArchiveFile)
 	http.Handle("/asset/", http.FileServer(http.FS(asset)))
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *portFlag), nil))
 }
