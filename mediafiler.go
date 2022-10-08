@@ -19,6 +19,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/zncoder/qad"
 )
 
 type FileInfo struct {
@@ -53,9 +55,7 @@ var asset embed.FS
 
 var indexTmpl = func() *template.Template {
 	index, err := asset.ReadFile("asset/index.html")
-	if err != nil {
-		log.Fatal(err)
-	}
+	qad.Assert(err, "asset/index.html")
 	funcMap := template.FuncMap{
 		"title": extractTitle,
 	}
@@ -81,9 +81,7 @@ func (ds *Dirs) Index(w http.ResponseWriter, r *http.Request) {
 
 	var bb bytes.Buffer
 	err := indexTmpl.Execute(&bb, data)
-	if err != nil {
-		log.Fatal("execute", err, bb.String())
-	}
+	qad.Assert(err, "exec template")
 	w.Write(bb.Bytes())
 }
 
@@ -182,10 +180,7 @@ func (ds *Dirs) runDeleter() {
 				log.Fatalf("file:%s not end with .archive", p)
 			}
 			np := filepath.Join(archiveDir, filepath.Base(strings.TrimSuffix(p, ".archive")))
-			err := os.Rename(p, np)
-			if err != nil {
-				log.Printf("rename %s -> %s err:%v", p, np, err)
-			}
+			qad.MoveFile(p, np)
 		}
 	}
 }
@@ -220,9 +215,7 @@ func (ds *Dirs) discoverGarbage() {
 	var todel, toarchive []string
 	for _, d := range ds.dirs {
 		fs.WalkDir(os.DirFS(d), ".", func(p string, _ fs.DirEntry, err error) error {
-			if err != nil {
-				log.Fatal("walkdir", d, err)
-			}
+			qad.Assert(err, "walkdir", d)
 			switch filepath.Ext(p) {
 			case ".delete":
 				p := filepath.Join(d, p)
@@ -249,14 +242,11 @@ func (ds *Dirs) refresh() {
 	var files []FileInfo
 	for _, d := range ds.dirs {
 		fs.WalkDir(os.DirFS(d), ".", func(p string, _ fs.DirEntry, err error) error {
-			if err != nil {
-				log.Fatal("walkdir", d, err)
-			}
+			qad.Assert(err, "walkdir", d)
 			for _, sfx := range ds.suffixes {
 				if strings.HasSuffix(p, sfx) {
 					p := filepath.Join(d, p)
-					st, _ := os.Stat(p)
-					files = append(files, FileInfo{Path: p, ID: sha(p), ModTime: st.ModTime()})
+					files = append(files, FileInfo{Path: p, ID: sha(p), ModTime: qad.FileModTime(p)})
 					break
 				}
 			}
