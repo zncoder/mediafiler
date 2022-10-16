@@ -169,6 +169,7 @@ func (ds *Dirs) runDeleter() {
 		ds.mu.Unlock()
 
 		for _, p := range todel {
+			log.Printf("delete %q", p)
 			err := os.Remove(p)
 			if err != nil {
 				log.Printf("delete %s err:%v", p, err)
@@ -176,6 +177,7 @@ func (ds *Dirs) runDeleter() {
 		}
 
 		for _, p := range toarchive {
+			log.Printf("archive %q", p)
 			if !strings.HasSuffix(p, ".archive") {
 				log.Fatalf("file:%s not end with .archive", p)
 			}

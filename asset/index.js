@@ -3,9 +3,8 @@ function copyLink(ev) {
   let url = ev.target.parentElement.querySelector('.name_lnk').href
 
   let ta = document.createElement("textarea")
-  ta.textContent = url
-  ta.style.position = "fixed"
   document.body.appendChild(ta)
+  ta.value = url
   ta.select()
   try {
     document.execCommand("copy")
