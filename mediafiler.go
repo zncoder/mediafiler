@@ -170,19 +170,26 @@ func (ds *Dirs) runDeleter() {
 
 		for _, p := range todel {
 			log.Printf("delete %q", p)
-			err := os.Remove(p)
-			if err != nil {
-				log.Printf("delete %s err:%v", p, err)
-			}
+			qad.RemoveFile(p)
 		}
 
 		for _, p := range toarchive {
-			log.Printf("archive %q", p)
 			if !strings.HasSuffix(p, ".archive") {
 				log.Fatalf("file:%s not end with .archive", p)
 			}
-			np := filepath.Join(archiveDir, filepath.Base(strings.TrimSuffix(p, ".archive")))
-			qad.MoveFile(p, np)
+			dst := filepath.Join(archiveDir, filepath.Base(strings.TrimSuffix(p, ".archive")))
+			if dsize, ok := qad.FileSize(dst); ok {
+				ssize, _ := qad.FileSize(p)
+				if ssize == dsize {
+					log.Printf("%q is already archived", p)
+					qad.RemoveFile(p)
+				} else {
+					log.Printf("cannot archive %q, file exists", p)
+				}
+				continue
+			}
+			log.Printf("archive to %q", dst)
+			qad.MoveFile(p, dst)
 		}
 	}
 }

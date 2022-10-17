@@ -4,3 +4,7 @@ github.com/zncoder/qad v0.0.0-20221008171112-44af7e5e1350 h1:G6b3SooboQtYLyOdzBa
 github.com/zncoder/qad v0.0.0-20221008171112-44af7e5e1350/go.mod h1:uXdPa02+VM9oUJOhaI4imCFdAa/7ksmKnyRcaZ0O7+k=
 github.com/zncoder/qad v0.0.0-20221008182241-3564b64ea8c8 h1:D4duc/23BQ7Np6QadEntLeIV+Q/N9ZvTYw/5xpvMWTk=
 github.com/zncoder/qad v0.0.0-20221008182241-3564b64ea8c8/go.mod h1:uXdPa02+VM9oUJOhaI4imCFdAa/7ksmKnyRcaZ0O7+k=
+github.com/zncoder/qad v0.0.0-20221017053716-bd56de7de85b h1:CA5PqXUkPt/BW0159/A9cxCDBHAqr6vj+1jdKYnzfPo=
+github.com/zncoder/qad v0.0.0-20221017053716-bd56de7de85b/go.mod h1:uXdPa02+VM9oUJOhaI4imCFdAa/7ksmKnyRcaZ0O7+k=
+github.com/zncoder/qad v0.0.0-20221017054924-29a6bcb4c199 h1:xlwsIvpx0z0phqaBkm0nGEhG89Fko42OYC+Zh+yFHGc=
+github.com/zncoder/qad v0.0.0-20221017054924-29a6bcb4c199/go.mod h1:uXdPa02+VM9oUJOhaI4imCFdAa/7ksmKnyRcaZ0O7+k=
