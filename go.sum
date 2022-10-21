@@ -8,3 +8,5 @@ github.com/zncoder/qad v0.0.0-20221017053716-bd56de7de85b h1:CA5PqXUkPt/BW0159/A
 github.com/zncoder/qad v0.0.0-20221017053716-bd56de7de85b/go.mod h1:uXdPa02+VM9oUJOhaI4imCFdAa/7ksmKnyRcaZ0O7+k=
 github.com/zncoder/qad v0.0.0-20221017054924-29a6bcb4c199 h1:xlwsIvpx0z0phqaBkm0nGEhG89Fko42OYC+Zh+yFHGc=
 github.com/zncoder/qad v0.0.0-20221017054924-29a6bcb4c199/go.mod h1:uXdPa02+VM9oUJOhaI4imCFdAa/7ksmKnyRcaZ0O7+k=
+github.com/zncoder/qad v0.0.0-20221021063328-0d3b000e69d3 h1:+E4VtljBuDga9l4m3XvUj1Wx+7a6VprL8U3aqYgiUoA=
+github.com/zncoder/qad v0.0.0-20221021063328-0d3b000e69d3/go.mod h1:uXdPa02+VM9oUJOhaI4imCFdAa/7ksmKnyRcaZ0O7+k=

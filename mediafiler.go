@@ -265,6 +265,7 @@ func (ds *Dirs) refresh() {
 
 	minPrefix(files)
 
+	// TODO: sort by (parentDir, modtime)
 	sort.Slice(files, func(i, j int) bool { return files[i].ModTime.Before(files[j].ModTime) })
 
 	ds.files = files
