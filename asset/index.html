@@ -10,11 +10,11 @@
   <ol start="0">
     {{with $d := .}}
     {{range $f := $d.Files}}<li>
-      <a class="link_btn" href="#" onclick="copyLink(event)">cp</a>
+      <a class="link_btn" href="#" onclick="copyLink(event)">copylink</a>
       {{if $d.EnableArchive}}
-      <a class="archive_btn" href="/archive/{{$f.ID}}" onclick="archiveFile(event)">ar</a>
+      <a class="archive_btn" href="/archive/{{$f.ID}}" onclick="archiveFile(event)">archive</a>
       {{end}}
-      <a class="name_lnk" href="/f/{{$f.ID}}">{{title $f.Path}}</a>
+      <a class="name_lnk" href="/f/{{$f.ID}}#{{title $f.Path}}">{{title $f.Path}}</a>
       <a class="del_btn" href="/delete/{{$f.ID}}" onclick="deleteFile(event)">x</a>
     </li>
     {{end}}
