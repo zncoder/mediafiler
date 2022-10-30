@@ -290,7 +290,9 @@ func (ds *Dirs) ServeFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Add("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filepath.Base(filename)))
+	// this will cause browser to download the file
+	// w.Header().Add("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filepath.Base(filename)))
+
 	http.ServeFile(w, r, filename)
 }
 
