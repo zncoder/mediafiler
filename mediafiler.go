@@ -255,6 +255,10 @@ func (ds *Dirs) refresh() {
 			for _, sfx := range ds.suffixes {
 				if strings.HasSuffix(p, sfx) {
 					p := filepath.Join(d, p)
+					if !qad.FileExist(p) {
+						log.Println("file:%q not exist", p)
+						continue
+					}
 					files = append(files, FileInfo{Path: p, ID: sha(p), ModTime: qad.FileModTime(p)})
 					break
 				}
