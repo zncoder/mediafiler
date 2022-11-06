@@ -256,7 +256,8 @@ func (ds *Dirs) refresh() {
 				if strings.HasSuffix(p, sfx) {
 					p := filepath.Join(d, p)
 					if !qad.FileExist(p) {
-						log.Println("file:%q not exist", p)
+						log.Println(p, "not exist")
+						qad.RemoveFile(p)
 						continue
 					}
 					files = append(files, FileInfo{Path: p, ID: sha(p), ModTime: qad.FileModTime(p)})
